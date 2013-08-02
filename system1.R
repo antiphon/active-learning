@@ -3,8 +3,8 @@
 
 source("experts.R")
 
-system1 <- function(data, burnin, expert) {  
-  n <- nrow(data) - length(burnin)
+system1 <- function(data, burnin, expert, n) {  
+  if(missing(n))n <- nrow(data) - length(burnin)
   obs_data <- data[burnin, ]
   
   m <- model_entropy(obs_data, data)
