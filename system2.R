@@ -21,6 +21,7 @@ update_user_prob <- function(user, alpha) {
 }
 
 system2 <- function(data, burnin, expert, nsteps = 200, alpha = c(1, 1, 1)) {  
+  #return(system1(data, burnin, expert, nsteps))
   n <- nrow(data) - length(burnin)
   obs_data <- data[burnin, ]
   
@@ -41,6 +42,7 @@ system2 <- function(data, burnin, expert, nsteps = 200, alpha = c(1, 1, 1)) {
   for ( i in 1:nsteps ) {
     ue <- user_model_entropy(up)
     w <- which.max(sqrt(m$entropy * ue))
+    #w <- which.max(m$entropy) ## = system 1
     l <- expert(data[w, 1:4])
     obs_data <- rbind(obs_data, cbind(data[w, 1:4], Species = l))
     m <- model_entropy(obs_data, data)
@@ -49,7 +51,7 @@ system2 <- function(data, burnin, expert, nsteps = 200, alpha = c(1, 1, 1)) {
     up <- update_user_prob(uc, alpha)
     
     hist$entropy[[i]] <- m$entropy
-    hist$classerror <- c(hist[[2]], sum(m$class != data$Species) / nrow(data))
+    hist$classerror <- c(hist$classerror, sum(m$class != data$Species) / nrow(data))
     hist$usercount[[i]] <- uc
     hist$userentropy[[i]] <- ue
 
