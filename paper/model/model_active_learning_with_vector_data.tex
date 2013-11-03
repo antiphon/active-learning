@@ -1,0 +1,149 @@
+\documentclass[10pt, onecolumn]{article}
+
+\usepackage[utf8]{inputenc}
+%\renewcommand*{\familydefault}{\sfdefault}
+
+\usepackage{amsmath, amssymb}
+
+\usepackage{graphicx}
+\usepackage{fullpage}
+
+\newcommand{\U}{\mathcal{U}}
+\renewcommand{\L}{\mathcal{L}}
+\newcommand{\newx}{{x^\star}}
+\newcommand{\newy}{y^\star}
+\newcommand{\answer}{h^\star}
+\renewcommand{\H}{\mathcal{H}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\D}{\mathcal{D}}
+
+
+\usepackage{lineno}
+
+%\linenumbers
+
+\usepackage[numbers, square, sort]{natbib}
+
+\usepackage{framed}
+
+\parindent0pt
+\parskip5pt
+
+
+\begin{document}
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+\title{A model for the labeler in active learning}
+\author{A1, A2}
+\maketitle
+
+
+\begin{abstract}
+We discuss the active learning scenario for classification where 1) a labeler returns a probability vector over the labels 2) the labeler's certainty of the labels is not constant over the item space. We show how the labeler uncertainty can be modelled using Gaussian process latent variable model, and how incorporating the uncertain labeler model to the optimal sampling scheme improves classification under uncertain labeling.
+\end{abstract}
+
+\section{Basis model for active learning}
+Using the language of the 2010 survey by Settles.
+
+Task: Train a classifier in a semi-supervised manner. We have a set $\L$ of labeled training items, and we want to improve the classifier by asking an labeler for some more labels. 
+
+The scenario: Pool-based sampling. We have a pool $\U$ of unlabeled items which we can use for querying the oracle for their label.
+
+Query strategy: uncertainty sampling using entropy as query informativeness.
+
+\subsection{Uncertain labeling}
+For a given unlabeled item $x$, the labeler gives a label-probability vector instead of the true label (oracle) or a randomly sampled label (noisy oracle).
+
+The idea: labeler is modelled as being uncertain of the label, and she can express this. 
+
+Model: Let $\D=\{(y,x)\}$ denote a set of items, where $y\in C$ with $|C|=m$ denote labels for the items, and $x\in \X\subseteq \R^p$ denote other features (covariates). Write for any $x$ the correct label $y_x$. 
+
+Start with a training set of correcly labeled items $\L=\{(y_i; x_i)\}$. Denote $\U=\D\setminus \L$. The classifier model
+
+\begin{eqnarray}
+y | x, \theta &\sim & p(y| x, \theta)\\
+\theta & \sim & p(\theta)
+\end{eqnarray}
+
+learns the $\theta$ from the $\L$. Active learning is about increasing the model fitness  by querying most informative $x$ to get $y_x$ so as to optimally increase upon $\L$ with minimum number of queries. The basic setting assumes an \emph{oracle}, an external labeler which provides the correct label for any query $\newx\in \U$ and which we then use to enhance the estimate of $\theta$.
+
+Now define a \emph{multivariate oracle}: when queried for a label for $\newx\in \U$ the multivariate oracle's answer is a distribution over $C$ instead of the correct label:
+
+\begin{eqnarray}
+\answer & \sim & p(\answer | \newx, \alpha), \quad \answer \in \H=\{h\in \R_+: 0<\sum_{c\in C} h_c<\infty\}\\
+p(\newy=c' | \newx) &=&h_{c'}/\sum h_{c} \\
+\alpha & \sim & p(\alpha)
+\end{eqnarray}
+
+We get the oracle from this by setting $$p(h|\newx,\alpha)=1(h_{y_\newx}>0, h_{c}\neq 0\  \forall\ c\neq y_\newx).$$ In other words, the active learning maps queries with functions
+\begin{eqnarray}
+\mathrm{oracle} \quad f_o(\newx) & = & y_\newx \\
+\mathrm{multivariate\ oracle} \quad f_{co}(\newx) & = & h_\newx
+\end{eqnarray}
+
+How do we use the multivariate oracle for active learning? The oracle is used in the following algorithmic manner:
+\begin{enumerate}
+\item Compute the informativeness $I(x):=I(x | \theta, \L)$ of each $x\in \U$
+\item Augment $\L:= \L \cup \{(f_o(\newx), \newx)\}$ where $\newx = argmax\ I(x)$.
+\item Check some stopping rule.
+\end{enumerate}
+
+The multivariate oracle case suggest two approaches to the algorithm, of which both lead to the same probabilistic model. First is the 'heuristic' realisation approach, where we sample the label from the distribution provided by the oracle, viz.
+\begin{enumerate}
+\item[2'.] Augment $\L:= \L \cup \{(\tilde{y}_\newx, \newx)\}$ where $\newx = argmax\ I(x)$ and $\tilde{y}_\newx\sim h_\newx$.
+\end{enumerate}
+This leads to a new source of noise in $\L$, which then is handled by the augmenting the classifier model. 
+
+The other option is to change the structure of the data. Let again $\L_t$ be the queried set by now consisting of pairs $(h_x,x)$. Then 
+\begin{itemize}
+\item[2''.] Augment $\L:=\L\cup \{(h_\newx, \newx)\}$ where $\newx=argmax\ I(x)$.
+\end{itemize} 
+
+If $\L_0$ is the (clean) training set, and $\L_t$ is the queried set after $t$ iterations, we add to the model (1)
+\begin{eqnarray}
+\tilde p(h_x|x, \theta) &=& E_{\tilde y|h_x}p(\tilde y|x, \theta) \qquad (h_x, x)\in \L_t
+\end{eqnarray}
+
+This is then used for inferring $\theta$, and for deriving new  values for $I(x)$.
+
+
+\section{Model for an uncertain labeler}
+
+Imagine an uncertain labeler that has a fixed area of knowledge, outside of which he knowns nothing. For illustration, let's imagine a sphere in the feature space inside of which the multivariate oracle knows the label for any point, and outside the sphere he simply replies by uniform weighting of the labels. 
+
+Now consider the case where an item outside the sphere is most informative. The item is queried, and the multivariate oracle returns an uniform distribution. How does the answer affect our system? For the Naive Bayes classifier it is easy to show that the  equal allocation of evidence to different classes shifts the class-wise parameters towards their global counterparts. This is likelily to reduce entropy very little, in which case the same item is very likely to be picked for querying also in the next round. 
+
+\subsection{Modeling labeler uncertainty}
+In order to avoid querying with 'useless' points we could try to model $$h\sim p(h|x, \alpha).$$ For illustration we pick the Dirichlet distribution with some parameter field $\alpha(x)>0\ \forall x\in \X$. In the sphere example the idea would then be that inside the sphere $\alpha(x)$ is low, thus producing 'certain' responses, and outside the spehere $\alpha(x)$ is large, producing flat distributions. If we can learn the difference, we can guide our sampling to more generally useful queries.
+
+The $\alpha(x)>0$ is positive valued function of the features. Let's assume the features live in a continuous metric space so that we can do smoothing in it. Set 
+\begin{eqnarray}
+\alpha(x) & \sim & \log GP(x, \mu, \rho) 
+\end{eqnarray}
+where $\rho$ is a stationary covariance function. The observation likelihood for $n$ samples, without the hyperparameters, becomes
+
+\begin{eqnarray}
+p(h_1,...,h_n | x_1, ..., x_n , \alpha) &=& \prod p(h_i | \alpha(x_i)) p(\bold{\alpha(x)}) \\
+\end{eqnarray}
+for which we can write $\alpha_i=\alpha(x_i)$ and get
+\begin{eqnarray}
+l(\bold \alpha; \bold h, \bold x)&\propto& \sum_i [ -\log B(\alpha_i) + \alpha_i \sum_k \log h_{ik}] - \\
+&& \sum_i [\log \alpha_i]  -\frac{1}{2}(\log \bold\alpha-\mu)^T Q (\log \bold\alpha - \mu)
+\end{eqnarray}
+where $Q$ is the inverse covariance matrix, taken as known, and $B(\alpha)=\Gamma^K(\alpha)/\Gamma(K\alpha)$ is the Beta-function. Direct optimization with respect to $\alpha$ is straightforward as the function is convex. 
+
+\subsection{Informativeness of the labeler}
+Imagine the labeler giving $h=h(x)$ vector as a response to a query $x$. The informativeness tag for an item $x$ based on the entropy of $h$ is then
+$$I_o(x):= -E \sum_k h_k(x) \log h_k(x)$$
+where $h(x)$ is a Dirichlet random variable with parameter $\alpha(x)$. Taking the expectation w.r.t. $h$ leads to
+$$I_o(x) = \log B(\alpha(x)) + K(\alpha(x)-1)[\psi(K\alpha) - \psi(\alpha(x))]$$
+where $\psi$ is the digamma function.
+
+\end{document}
+
+
+
+
+
+
+
