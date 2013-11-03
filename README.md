@@ -11,6 +11,9 @@
 
 * Information retrieval
 
+## Publishing forum
+Machine Learning -journal
+
 ## Modeling ideas, labeling example
 Main idea: User not an oracle.
 
