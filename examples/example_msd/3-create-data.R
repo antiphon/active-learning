@@ -78,7 +78,7 @@ songs_compr <- songs_compr[-bad_songs]
 songs_compr <- do.call(rbind, songs_compr)
 songs_compr <- as.data.frame(songs_compr)
 
-songsOK <- songsOK[-bad_songs]
+songsOK <- songsOK[-bad_songs, ]
 
 
 ### Export data:
@@ -97,11 +97,4 @@ songs_pca <- as.data.frame(songs_pca$x)
 ### Export data:
 
 saveRDS(songs_pca, file = "data/msd-features-pca.Rds")
-
-
-### Check the PCs:
-
-library("seriation")
-d <- dist(songs_pca[, 1:10])
-pimage(d)
 
