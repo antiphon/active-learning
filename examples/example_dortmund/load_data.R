@@ -1,8 +1,8 @@
 ### Data: ############################################################
-load_data <- function(){
+load_data <- function(ratio = 0.7){
   songs <- readRDS("data/dortmund-features.Rds")
   
-  traini <- sample(1:nrow(songs), nrow(songs)*0.7)
+  traini <- sample(1:nrow(songs), nrow(songs)*ratio)
   testi <- setdiff(1:nrow(songs), traini)
   
   feats <- subset(songs, select=-c(id, genre))
@@ -12,10 +12,10 @@ load_data <- function(){
   X <- as.data.frame(scale(feats))
   
   songs_train <- data.frame(genre = songs$genre[traini],
-                                 X=X[traini, ])
+                            X[traini, ])
   ##  test set
   songs_test <- data.frame(genre = songs$genre[testi],
-                         X=X[testi, ])
+                           X[testi, ])
     
-  list(train=songs_train, test=songs_test, X=X, genre=songs$genre)
+  list(train=songs_train, test=songs_test)
 }

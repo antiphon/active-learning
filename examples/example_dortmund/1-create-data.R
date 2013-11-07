@@ -2,7 +2,7 @@
 dat <- read.table("extdata/Music_features_17_10_2005/music_data_17_10_05.exa",
                   sep = " ", header = FALSE, stringsAsFactors = FALSE)
 
-dat$V38 <- dat$V39 <- dat$V42 <- dat$V43 <- dat$V46 <- dat$V47 <- dat$V52 <- NULL
+dat$V34 <- dat$V38 <- dat$V39 <- dat$V42 <- dat$V43 <- dat$V46 <- dat$V47 <- dat$V52 <- NULL
 
 dat$V51 <- factor(dat$V51)
 

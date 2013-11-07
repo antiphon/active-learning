@@ -13,13 +13,12 @@ probM <- function(x, fit) {
   for(i in 1:length(fit$classes)){
     p<-NULL
     S <- fit$theta_S[[i]]
-    for(j in 1:nrow(xz)){
-      p[j] <- log(fit$theta_c[i]) + dmvnorm(xz[j,], fit$theta_m[,i], S, log=T) 
-    }
+    #for(j in 1:nrow(xz)){
+      p <- log(fit$theta_c[i]) + dmvnorm(xz, fit$theta_m[,i], S, log=T) 
+    #}
     ps <- cbind(ps, p)
   }
   # scale
-  ps<<-ps
   ps <- t(apply(ps, 1, function(p) p-log(sum(exp(p))) ))
   colnames(ps) <- colnames(fit$theta_m)
   ps
