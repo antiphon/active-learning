@@ -2,23 +2,41 @@
 library("shiny")
 
 
-POOL <- "~/Workspace/active-learning/pkg/laal/inst/dortmund/www"
 
-sound_pool <- readRDS(sprintf("%s/dortmund-features.Rds", POOL))
+### Experiment implementation: #######################################
+
+ROOT <- "~/Workspace/active-learning/experiment"
+
+sound_pool <- readRDS("pool.Rds")
 sound_pool <- subset(sound_pool, genre != "jazz")
 genres <- levels(sound_pool$genre)
-#w <- lapply(sound_pool$id, agrep, list.files(POOL, pattern = ".mp3"), value = TRUE)
 
-classifier <- function(user_id, question, answer) {
+
+init_experiment <- function(id) {
+  d <- sprintf("%s/%s", ROOT, id)
+  dir.create(d)
+  d
+}
+
+
+
+### Classifier implementation: #######################################
+
+call_classifier <- function(user_id, user_dir, num_question, question, answer) {
+  saveRDS(list(user_id = user_id, num_question = num_question, 
+               question = question, answer = answer), 
+          file = sprintf("%s/%s.Rds", user_dir, num_question))
+  
+  
   w <- sample(1:nrow(sound_pool), 1)
 
   r1 <- as.character(sound_pool$genre[w])
   r4 <- sample(setdiff(genres, r1), 4)
   
   s <- sound_pool$id[w]
-  s <- sprintf("%s.mp3", substr(s, 1, nchar(s) - 4))
+  f <- sound_pool$file[w]
   
-  list(song = s, genres = sample(c(r1, r4)))
+  list(song = s, file = f, genres = sample(c(r1, r4)))
 }
 
 
@@ -29,10 +47,7 @@ renderAudioSource <- function(expr, env = parent.frame(), quoted = FALSE) {
   installExprFunction(expr, "func", env, quoted)
   return(function(shinysession, name, ...){
     audioinfo <- func()
-    contentType <- shiny:::getContentType(sub("^.*\\.", "", basename(audioinfo$src)))
-    c(src = "1nothing-walk_away.mp3",
-      #src = shinysession$fileUrl(name, file = "1nothing-walk_away.mp3", contentType = contentType), 
-      type = audioinfo$type)
+    c(src = audioinfo$src, type = audioinfo$type)
   })
 }
 
@@ -45,11 +60,13 @@ shinyServer(function(input, output, session) {
   user_id <- sprintf("%s%s", 
                      paste(sample(letters, 3), collapse = ""), 
                      as.integer(Sys.time()))
-
+  
+  user_dir <- init_experiment(user_id)
+  
   question <- NULL
   num_questions <- 0
   next_song <- ""
-  
+    
   values <- reactiveValues(iters = num_questions,
                            song = next_song)
   
@@ -64,7 +81,7 @@ shinyServer(function(input, output, session) {
     
     
     ## Call classifier and wait for new music to label:
-    question <<- classifier(user_id, question, answer)
+    question <<- call_classifier(user_id, user_dir, num_questions, question, answer)
     
     
     ## Update website, values, etc:
@@ -77,7 +94,7 @@ shinyServer(function(input, output, session) {
     num_questions <<- num_questions + 1
 
     values$iters <- num_questions
-    values$song <- question$song
+    values$song <- question$file
     
     user_id
   })
