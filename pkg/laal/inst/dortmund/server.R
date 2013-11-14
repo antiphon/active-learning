@@ -1,19 +1,23 @@
-
+  
 library("shiny")
 
 
+### Experiment definition, etc.: #####################################
 
-### Experiment implementation: #######################################
+ROOT_DIR <- getOption("DORTMUND_EXPERIMENT_DIR")
 
-ROOT <- "~/Workspace/active-learning/experiment"
+SOUND_POOL_FILE <- file.path(ROOT_DIR, "musicpool", "description.Rds")
+SHINY_MUSIC_DIR <- file.path(ROOT_DIR, "musicpool", "mp3s")
+EXPERIMENT_DIR <- file.path(ROOT_DIR, "sessions")
 
-sound_pool <- readRDS("pool.Rds")
-sound_pool <- subset(sound_pool, genre != "jazz")
+sound_pool <- readRDS(SOUND_POOL_FILE)
 genres <- levels(sound_pool$genre)
+
+addResourcePath("music", SHINY_MUSIC_DIR)
 
 
 init_experiment <- function(id) {
-  d <- sprintf("%s/%s", ROOT, id)
+  d <- sprintf("%s/%s", EXPERIMENT_DIR, id)
   dir.create(d)
   d
 }
@@ -22,12 +26,7 @@ init_experiment <- function(id) {
 
 ### Classifier implementation: #######################################
 
-call_classifier <- function(user_id, user_dir, num_question, question, answer) {
-  saveRDS(list(user_id = user_id, num_question = num_question, 
-               question = question, answer = answer), 
-          file = sprintf("%s/%s.Rds", user_dir, num_question))
-  
-  
+call_classifier <- function(user_id, user_dir, num_question, question, answer) {  
   w <- sample(1:nrow(sound_pool), 1)
 
   r1 <- as.character(sound_pool$genre[w])
@@ -35,6 +34,12 @@ call_classifier <- function(user_id, user_dir, num_question, question, answer) {
   
   s <- sound_pool$id[w]
   f <- sound_pool$file[w]
+  
+  
+  saveRDS(list(user_id = user_id, num_question = num_question, 
+               question = question, answer = answer), 
+          file = sprintf("%s/%s.Rds", user_dir, num_question))
+  
   
   list(song = s, file = f, genres = sample(c(r1, r4)))
 }
@@ -65,10 +70,8 @@ shinyServer(function(input, output, session) {
   
   question <- NULL
   num_questions <- 0
-  next_song <- ""
-    
-  values <- reactiveValues(iters = num_questions,
-                           song = next_song)
+  
+  values <- reactiveValues(iters = num_questions, song = "", file = "")
   
   
   output$userid <- renderText({
@@ -85,16 +88,17 @@ shinyServer(function(input, output, session) {
     
     
     ## Update website, values, etc:
-    updateSliderInput(session, "g1value", value = 0, label = question$genres[1])
-    updateSliderInput(session, "g2value", value = 0, label = question$genres[2])
-    updateSliderInput(session, "g3value", value = 0, label = question$genres[3])
-    updateSliderInput(session, "g4value", value = 0, label = question$genres[4])
-    updateSliderInput(session, "g5value", value = 0, label = question$genres[5])
+    updateSliderInput(session, "g1value", value = 20, label = question$genres[1])
+    updateSliderInput(session, "g2value", value = 20, label = question$genres[2])
+    updateSliderInput(session, "g3value", value = 20, label = question$genres[3])
+    updateSliderInput(session, "g4value", value = 20, label = question$genres[4])
+    updateSliderInput(session, "g5value", value = 20, label = question$genres[5])
     
     num_questions <<- num_questions + 1
 
     values$iters <- num_questions
-    values$song <- question$file
+    values$song <- question$song
+    values$file <- question$file
     
     user_id
   })
@@ -111,7 +115,7 @@ shinyServer(function(input, output, session) {
   
   
   output$audiosrc <- renderAudioSource({
-    list(src = values$song, type = "audio/mpeg")
+    list(src = sprintf("/music/%s", values$file), type = "audio/mpeg")
   })
 })
 
