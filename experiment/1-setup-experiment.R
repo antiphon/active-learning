@@ -41,7 +41,7 @@ dat$genre <- droplevels(dat$genre)
 
 ### Map ids to files:
 
-files <- list.files("musicpool/", pattern = ".mp3")
+files <- list.files("musicpool/mp3s", pattern = ".mp3")
 w <- lapply(dat$id, agrep, files, value = TRUE)
 
 stopifnot(all(!sapply(w, is.null)))

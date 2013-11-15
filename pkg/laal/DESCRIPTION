@@ -8,4 +8,4 @@ Maintainer: Who to complain to <yourfault@somewhere.net>
 Description: Labeller Adjusted Active Learning; with an exciting 
   music classification example implemented as Shiny app.
 License: What license is it under?
-Depends: shiny
+Depends: shiny, mvtnorm
