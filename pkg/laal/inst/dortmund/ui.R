@@ -29,7 +29,10 @@ shinyUI(pageWithSidebar(
         sliderInput("g3value", "Genre3", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
         sliderInput("g4value", "Genre4", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
         sliderInput("g5value", "Genre5", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
-      
+        sliderInput("g6value", "Genre6", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
+        sliderInput("g7value", "Genre7", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
+        sliderInput("g8value", "Genre8", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
+        
         submitButton("Submit")
       )
     )

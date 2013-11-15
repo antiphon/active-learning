@@ -22,26 +22,36 @@ init_experiment <- function(id) {
   d
 }
 
+setup_experiment <- function(id) {
+  classifier <- classifier_initial(sound_pool)
+  # load user here if exists
+  labeller <- labeller_initial(parameters_default())
+  print(labeller$parameters$minimum_data)
+  list(models=list(classifier=classifier, labeller=labeller))
+}
 
+### Classifier and user implementation: #######################################
 
-### Classifier implementation: #######################################
-
-call_classifier <- function(user_id, user_dir, num_question, question, answer) {  
-  w <- sample(1:nrow(sound_pool), 1)
-
-  r1 <- as.character(sound_pool$genre[w])
-  r4 <- sample(setdiff(genres, r1), 4)
+update_models <- function(user_id, user_dir, num_question, question, answer, models) {  
+  #w <- sample(1:nrow(sound_pool), 1)
+  
+  update <- active_learning_step(num_question, question, answer, models, sound_pool)
+  w <- update$new_question_idx
+  models <- update$models
+  
+  #r1 <- as.character(sound_pool$genre[w])
+  #r4 <- sample(setdiff(genres, r1), 4)
   
   s <- sound_pool$id[w]
   f <- sound_pool$file[w]
   
-  
   saveRDS(list(user_id = user_id, num_question = num_question, 
-               question = question, answer = answer), 
+               question = question, answer = answer, models=models), 
           file = sprintf("%s/%s.Rds", user_dir, num_question))
   
   
-  list(song = s, file = f, genres = sample(c(r1, r4)))
+  list(question=list(song = s, idx=w, file = f, genres = sample(genres)),#sample(c(r1, r4))), 
+       models=models)
 }
 
 
@@ -67,6 +77,9 @@ shinyServer(function(input, output, session) {
                      as.integer(Sys.time()))
   
   user_dir <- init_experiment(user_id)
+  initials <- setup_experiment(user_id)
+  
+  models <- initials$models
   
   question <- NULL
   num_questions <- 0
@@ -80,12 +93,16 @@ shinyServer(function(input, output, session) {
                          g2 = input$g2value,
                          g3 = input$g3value,
                          g4 = input$g4value,
-                         g5 = input$g5value)
+                         g5 = input$g5value,
+                         g6 = input$g6value,
+                         g7 = input$g7value,
+                         g8 = input$g8value)
     
     
     ## Call classifier and wait for new music to label:
-    question <<- call_classifier(user_id, user_dir, num_questions, question, answer)
-    
+    update <- update_models(user_id, user_dir, num_questions, question, answer, models)
+    question <<- update$question
+    models <<- update$models
     
     ## Update website, values, etc:
     updateSliderInput(session, "g1value", value = 20, label = question$genres[1])
@@ -93,6 +110,9 @@ shinyServer(function(input, output, session) {
     updateSliderInput(session, "g3value", value = 20, label = question$genres[3])
     updateSliderInput(session, "g4value", value = 20, label = question$genres[4])
     updateSliderInput(session, "g5value", value = 20, label = question$genres[5])
+    updateSliderInput(session, "g6value", value = 20, label = question$genres[6])
+    updateSliderInput(session, "g7value", value = 20, label = question$genres[7])
+    updateSliderInput(session, "g8value", value = 20, label = question$genres[8])
     
     num_questions <<- num_questions + 1
 

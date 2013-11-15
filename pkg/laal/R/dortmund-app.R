@@ -7,3 +7,4 @@ run_dortmund <- function(experiment_dir) {
                 port = 8100, launch.browser = FALSE)
 }
 
+TUOMAS <-  "~/Dropbox/work/hiit/project3/active_learning_user/experiment"
