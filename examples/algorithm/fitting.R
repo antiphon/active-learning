@@ -26,7 +26,7 @@ fitM0 <- function(data0, prior_sd=1) {
        )
 }
 #############
-update_fitM <- function(fit, data1x, data1h) {
+update_fitM <- function(fit, data1x, data1h, ...) {
   data1x<-rbind(data1x)
   data1h<-rbind(data1h)
   
@@ -56,9 +56,15 @@ update_fitM <- function(fit, data1x, data1h) {
   
   ## then we go and update the alpha
   ## TODO update formula here!
-  if(fit$est_alpha){
-    fit$a_est <- estimate_alpha(fit$data_h, fit$data_X, prior=fit$prior)
-    fit$alpha <- predictor_alpha(fit$a_est, fit$data_X)
+  if(fit$est_alpha & fit$collect_n_before_est_alpha <= nrow(fit$data_h)){
+    if(fit$use_inla){
+      fit$a_est <- estimate_alpha_inla(fit$data_h, fit$data_X, prior=fit$prior, ...)
+      fit$alpha <- predictor_alpha_inla(fit$a_est, fit$data_X)
+    }
+    else{
+      fit$a_est <- estimate_alpha(fit$data_h, fit$data_X, prior=fit$prior)
+      fit$alpha <- predictor_alpha(fit$a_est, fit$data_X)
+    }
   }
   else fit$alpha <- function(xy) rep(1, nrow(rbind(xy)))
   ## done, update result object

@@ -1,0 +1,152 @@
+\documentclass[10pt, onecolumn]{article}
+
+\usepackage[utf8]{inputenc}
+%\renewcommand*{\familydefault}{\sfdefault}
+
+\usepackage{amsmath, amssymb}
+
+\usepackage{graphicx}
+\usepackage{fullpage}
+
+\newcommand{\U}{\mathcal{U}}
+\renewcommand{\L}{\mathcal{L}}
+\newcommand{\newx}{{x^\star}}
+\newcommand{\newy}{y^\star}
+\newcommand{\answer}{h^\star}
+\renewcommand{\H}{\mathcal{H}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+
+
+\usepackage{lineno}
+
+%\linenumbers
+
+\usepackage[numbers, square, sort]{natbib}
+
+\usepackage{framed}
+
+\parindent0pt
+\parskip5pt
+
+
+\begin{document}
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+\title{Inference for symmetric Dirichlet regression with GP prior}
+\author{Tuomas Rajala}
+\maketitle
+
+The model for observations $h_i, i=1,...,n$ with the features of the query written as $s_i, i=1, ..., n$:
+
+\begin{eqnarray}
+h_i | \eta_i & \sim & \mathrm{Symmetric\ Dirichlet}(\exp(\eta_i))\\
+\eta_i &=& \beta_0 + u_i + \varepsilon_i \\
+\varepsilon_i|\sigma_e^2  &\sim & N(0, \sigma^2_\varepsilon)\\
+\beta_0|\sigma_b^2 &\sim & N(0, \sigma^2_b)\\
+(u_1,...,u_n)|\sigma_u^2, \delta  &\sim & MVN(0, \sigma_u^2 R_{\delta}(\bold s, \bold s))
+\end{eqnarray}
+where $R_\delta$ is a correlation matrix.
+
+We use the Mat\'{e}rn family correlation
+\[
+\rho_\delta (r) \propto K_\nu(r d) (r d)^\nu, \quad d=\sqrt{8\nu}/\delta
+\]
+where $\nu>0$ is a fixed smoothness parameter, $K_\nu$ is the modified Bessel function of the second kind. We use the transformed range $d$ for which $\rho_d(d)\approx 0.1$. The estimation of both $\nu$ and $d$ is not possible, so we fix $\nu=1$ in what follows.
+
+Combine all Gaussian variables into $\bold x=\{\eta_1,...,\eta_n, \beta_0, u_1, ..., u_n\}$ (using $\eta$ instead of $\varepsilon$ is easier), and let the hyper-parameters be $\theta=(\sigma_e^2, \sigma_u^2, d)$. Then we can write for the posterior
+
+\begin{eqnarray}
+p(\theta, \x | \y ) &\propto& p(\theta)p(\x|\theta) \prod p(h_i|x_i, \theta)\\
+&\propto&p(\theta)|Q(\theta)|^{1/2} \exp\left[-\frac{1}{2}\x^T Q(\theta)\x + \sum \log p(h_i|x_i,\theta)\right]
+\end{eqnarray}
+where $x_i$ are to the linear predictors $\eta_i$, and $Q(\theta)$ is the precision matrix of $\x$. 
+
+Now we use the INLA approach to estimate the posterior using numerical integration. The posterior of $\theta$ is approximately
+
+\begin{eqnarray}
+\tilde p(\theta|\y) &\propto & \frac{p(\x, \theta, \y)}{\tilde p_G(\x|\theta, \y)} \Big|_{\x=\x^*(\theta)}
+\end{eqnarray}
+ 
+where the evaluation is at the mode of the denominator for given $\theta$, the denominator  approximated by a Gaussian distribution as follows.
+
+It is clear that 
+\begin{eqnarray}
+p(\x | \theta, \y)&\propto& \exp \left[-\frac{1}{2}\x^T Q(\theta)\x + \sum g_i(x_i) \right]
+\end{eqnarray}
+where $g_i(x_i)=\log p(h_i|x_i,\theta)$. The mode of the distribution is obtained by a Newton-Raphson method, where the update is computed using a Gaussian approximation, obtained by second order Taylor approximation around the initial guess $\bold\mu^0$ by
+\[
+g_i(x_i)\approx g_i(\mu_i^0) + b_i x_i - \frac{1}{2}c_i x_i^2,
+\]
+with $b_i = g'(\mu_i^0)- \mu_i^0 g''(\mu_i^0)$ and $c_i=-g''(\mu_i^0)$. A Gaussian approximation is obtained with precision matrix $Q(\theta)+\mathrm{diag}(\bold c)$ and mode given by the solution of $[Q(\theta) + \mathrm{diag}(\bold c)]\bold\mu^1=\bold b$. 
+The convergence point $(\mu^*, Q^*)$ gives the Gaussian approximation
+\begin{equation}
+p(\x|\theta, \y)\approx \tilde p(\x|\theta, \y) \propto \exp \left[-\frac{1}{2}(\x-\mu^*)^T Q^*(\x-\mu^*)\right].
+\end{equation}
+
+For our model, with $K$ classes, the details are:
+\begin{eqnarray}
+g_i(x_i) &=& \log \Gamma(Ke^x_i) - K\log \Gamma(e^x_i) +(e^x_i - 1) v_i \qquad |\quad  v_i := \sum_k \log h_{ik}\\
+g_i'(x_i) &=& Ke^{x_i}\left[\psi_0(Ke^{x_i})-\psi_0(e^{x_i})\right]+e^{x_i} v_i\\
+g_i''(x_i)&=& Ke^{x_i}\left[\psi_0(Ke^{x_i})-\psi_0(e^{x_i}) + e^{x_i}\left\{K\psi_1(Ke^{x_i})-\psi_1(e^{x_i})\right\}\right] + e^{x_i}v_i
+\end{eqnarray}
+when $x_i=\eta_i$, and $b_i=c_i=0$ otherwise. 
+
+Assume the general case $\eta=Z\beta + u + \epsilon$ with some $n\times p$ covariate matrix $Z$. Our case is then $Z=(1...1)^T$, and the block symmetric covariance matrix $\Sigma(\theta)=Q^{-1}(\theta)$ for $\x$ is
+\begin{eqnarray}
+\Sigma(\theta) &=& \left(\begin{array}{lll} \Sigma_{\eta\eta} & \Sigma_{\eta\beta} & \Sigma_{\eta u}\\  & \Sigma_{\beta\beta}& 0 \\
+& & \Sigma_{uu} \end{array}\right), \quad\mathrm{with}\\
+\Sigma_{\eta\eta} &=& E[Z\beta+u+\epsilon][Z\beta+u+\epsilon]^T = Z\Sigma_{\beta\beta}Z^T + \Sigma_{uu} + \sigma_\epsilon^2 \bold 1_{n}, \\
+\Sigma_{\eta\beta} &=& Z\Sigma_{\beta\beta}\\
+\Sigma_{\eta u}&=&\Sigma_{uu} \\
+\Sigma_{\beta\beta}&=&\sigma^2_b \bold 1_{p\times p}\\
+\Sigma_{uu} &=& \sigma_u^2 R(\x,\x).
+\end{eqnarray}
+
+The $p(\eta_i|\y)$ is marginalization over hyperparameters
+\begin{eqnarray}
+\tilde p(x_i|\y) = \sum_k p(x_i|\bold\theta_k, \y) p(\bold\theta_k | \y) \Delta_k
+\end{eqnarray}
+where $\Delta_k$ are the volume weights.
+
+
+
+\section*{Computing the informativeness for unqueried points}
+
+In the end, for each item $i\in U$ we want to compute 
+\begin{eqnarray}
+I_u(i) &=& E[\mathrm{Var }(h_{ik}) | data]\qquad \forall k=1,...,K\\
+&=& \int f(e^{\eta_i}) p(\eta_i | data) d\eta_i
+\end{eqnarray}
+with $f(x)=(K-1)/K^3(x+1/K)$.
+
+Three options for computing this, in increasing complexity:
+\begin{enumerate}
+\item $\approx f(e^{E \eta_i})$,
+\item $\approx f(E e^{\eta_i})$,
+\item $\approx \sum_k f(e^{z_{k}})p_i(z_k) \delta_k$
+\end{enumerate}
+for some integration scheme with constant step size $\delta_k$. 
+
+For $\sigma_i^2>1$ the approximations differ, with 1. and 3. being closest together (3. is unbiased for $\delta_k \rightarrow 0$). Fortunately $\sigma_i^2$ is in practice small so we can use \#1 i.e. the plugin estimate.
+
+To derive the mean and variance for a new locations $\bold s^*$ we use the \textit{simple Kriging} equations:
+\begin{eqnarray}
+E\eta^*  &=&  C(\bold s^*, \bold s)(C(\bold s, \bold s)+\sigma_e^2 I)^{-1} \hat \eta + \hat \beta_0\\
+\Sigma_{\eta^*} &=& C(\bold s^*, \bold s^*) - C(\bold s^*, \bold s)[C(\bold s, \bold s) + \sigma_e^2]^{-1} C(\bold s,\bold s^*)\\
+C(\bold s^*, \bold s) &=& \sigma_u^2 R_\delta(\bold s^*,\bold s).
+\end{eqnarray}
+
+These formulas provide us with labeller's uncertainty for each item $i\in U$.
+
+
+\end{document}
+
+
+
+
+
+
+

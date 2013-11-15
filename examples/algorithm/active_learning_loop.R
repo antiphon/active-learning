@@ -9,13 +9,16 @@ active_learning <- function(data0, # the initial learning sample for the classif
                             true_labels, # true labels of unlabeld set, for error
                             nsteps=50, # how many iterations
                             I="entropy", 
-                            result, # previous result object
+                            result=NULL, # previous result object
                             alpha_prior, # priors for GP
                             combineI=function(a,b) a-b, # how to combine the I's
-                            est_alpha=TRUE,
+                            est_alpha=TRUE, collect_n_before_est_alpha=0,
                             test_data,
+                            use_inla=FALSE,
+                            debug=FALSE,
                             ...) {
-  if(missing('result')) {
+  cat2 <- if(debug) cat else function(...)NULL
+  if(is.null(result)) {
     result <- list( 
       fit = fitM0(data0),
       asked = NULL,
@@ -24,12 +27,16 @@ active_learning <- function(data0, # the initial learning sample for the classif
       I_hist = NULL,  # criteria
       training_error_hist = NULL,
       test_error_hist = NULL,
-      h_hist = NULL      
+      h_hist = NULL,
+      use_inla=use_inla
     )
+    result$fit$use_inla <- use_inla
     result$fit$est_alpha <- est_alpha
-    result$fit$prior <- alpha_prior
+    result$fit$collect_n_before_est_alpha <- collect_n_before_est_alpha
     result$asked <- NULL
   }
+  result$fit$prior <- alpha_prior
+  
   K <- length(result$fit$classes)
   
   # oracle entropy formula
@@ -37,26 +44,25 @@ active_learning <- function(data0, # the initial learning sample for the classif
   Iof <- function(newx, fit) {
     # use plug-in estimate
     a <- c(fit$alpha(newx))
-    #-( K*lgamma(a) - lgamma(K*a) + K * (a-1) * ( digamma(a) - digamma(a*K) ) )
     (K-1)/(K^2*(K*a+1))
   }
   # TODO counter resampling
   notasked <- setdiff(1:nrow(dataUnlabeled), result$asked)
   # loop
   for(i in 1:nsteps) {
-    cat("If ")
+    cat2("If ")
     result$Im_hist <- rbind(result$Im_hist, Im <- If(dataUnlabeled, result$fit, type=I))
-    cat("Iof ")
+    cat2("Iof ")
     result$Io_hist <- rbind(result$Io_hist, Io <- Iof(dataUnlabeled, result$fit))
     result$I_hist <- rbind(result$I_hist , Is <- combineI(Im, Io))
     result$asked <- c(result$asked, ask <- notasked[which.max(Is[notasked])])
     notasked <- setdiff(notasked, ask)
-    cat("Asking:", ask, " ", sep="")
+    cat2("Asking:", ask, " ", sep="")
     xnew <- dataUnlabeled[ask, ]
-    cat("oracle ")
+    cat2("oracle ")
     result$h_hist <- rbind(result$h_hist, hnew <- oracle(xnew)$h )
-    cat("updateFit ")
-    result$fit <- update_fitM(result$fit, xnew,  hnew)
+    cat2("updateFit ")
+    result$fit <- update_fitM(result$fit, xnew,  hnew, ...)
     ## training error
     result$training_error_hist <- c(result$training_error_hist, 
                            mean( 1*(true_labels==classify(dataUnlabeled, result$fit))  ))
@@ -66,9 +72,9 @@ active_learning <- function(data0, # the initial learning sample for the classif
                                       mean( 1*(test_data[,1]==classify(test_data[,-1], result$fit))  ))
     
     RES <<- result
-    cat("", i, "/", nsteps, "        \n")
+    cat2("", i, "/", nsteps, "        \n")
   }
-  cat("\n")
+  cat2("\n")
   result
 }
 

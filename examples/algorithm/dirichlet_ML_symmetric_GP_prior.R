@@ -4,7 +4,7 @@
 ## covariance function: the good old matern
 source("matern.R")
 
-DirGPSymML <- function(X, h, a0=0.1, eps=1e-4, 
+DirGPSymML <- function(X, h, a0=1, eps=1e-4, 
                      prior=list(range=0.1, mu=0, kappa=1, s2=1, nugget=0),
                      maxiter=5e2, 
                      verb=FALSE) {
