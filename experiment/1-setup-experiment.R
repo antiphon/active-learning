@@ -11,13 +11,14 @@ system(sprintf("wget -r -nd -l1 -P %s %s", src, dest), wait = TRUE)
 ### Create musicpool: ################################################
 
 dir.create("musicpool")
+dir.create("musicpool/mp3s")
 dir.create("sessions")
 
 zip_files <- c("alternative", "blues", "electronic", "folkcountry",
-               "funksoulrnb", "pop", "raphiphop", "rock")  # jazz
+               "funksoulrnb", "jazz", "pop", "raphiphop", "rock")
 zip_files <- sprintf("%s%s.zip", dest, zip_files)
 
-lapply(zip_files, unzip, exdir = "musicpool")
+lapply(zip_files, unzip, exdir = "musicpool/mp3s")
 
 
 
@@ -31,12 +32,6 @@ dat$V34 <- dat$V38 <- dat$V39 <- dat$V42 <- dat$V43 <- dat$V46 <- dat$V47 <- dat
 dat$V51 <- factor(dat$V51)
 
 names(dat) <- c("id", sprintf("feature%s", 1:(ncol(dat) - 2)), "genre")
-
-
-### Remove "jazz" because files are missing:
-
-dat <- subset(dat, genre != "jazz")
-dat$genre <- droplevels(dat$genre)
 
 
 ### Map ids to files:
