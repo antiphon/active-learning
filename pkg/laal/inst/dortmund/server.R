@@ -13,6 +13,8 @@ EXPERIMENT_DIR <- file.path(ROOT_DIR, "sessions")
 sound_pool <- readRDS(SOUND_POOL_FILE)
 genres <- levels(sound_pool$genre)
 
+K <- length(genres)
+
 addResourcePath("music", SHINY_MUSIC_DIR)
 
 
@@ -96,7 +98,8 @@ shinyServer(function(input, output, session) {
                          g5 = input$g5value,
                          g6 = input$g6value,
                          g7 = input$g7value,
-                         g8 = input$g8value)
+                         g8 = input$g8value,
+                         g9 = input$g9value)
     
     
     ## Call classifier and wait for new music to label:
@@ -105,15 +108,10 @@ shinyServer(function(input, output, session) {
     models <<- update$models
     
     ## Update website, values, etc:
-    updateSliderInput(session, "g1value", value = 20, label = question$genres[1])
-    updateSliderInput(session, "g2value", value = 20, label = question$genres[2])
-    updateSliderInput(session, "g3value", value = 20, label = question$genres[3])
-    updateSliderInput(session, "g4value", value = 20, label = question$genres[4])
-    updateSliderInput(session, "g5value", value = 20, label = question$genres[5])
-    updateSliderInput(session, "g6value", value = 20, label = question$genres[6])
-    updateSliderInput(session, "g7value", value = 20, label = question$genres[7])
-    updateSliderInput(session, "g8value", value = 20, label = question$genres[8])
-    
+    for(i in 1:K){
+      updateSliderInput(session, paste0("g",i,"value"), value = 100/K, label = question$genres[i])
+    }
+
     num_questions <<- num_questions + 1
 
     values$iters <- num_questions

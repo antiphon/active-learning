@@ -1,0 +1,21 @@
+.slider2{
+	/*-webkit-appearance: none !important;*/
+	width:120px;
+	margin: 0;
+}
+.input_label{
+	width: 10px;
+	float: right;
+	margin-right: 30px	;
+	border: 0px solid #000;
+	font-size: 0.9em;
+}
+
+.slider-row{
+	height: 30px;
+}
+
+#button_div{
+	margin-top: 20px;
+}
+

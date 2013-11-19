@@ -1,13 +1,30 @@
 
 library("shiny")
 
+####
+ownSlider <- function(inputId, label, value = 0) {
+  tags$div( tagList(
+    tags$label(label, "for"=inputId, class="input_label"),
+    tags$input(id = inputId,
+               class = "slider2",
+               type = "range",
+               min=0,
+               max=100,
+               value=value)
+  ),
+            class="slider-row"
+  )
+}
 
+K <- 9
 
 ### Shiny client implementation: #####################################
 
-shinyUI(pageWithSidebar(
+shinyUI(
+  pageWithSidebar(
   headerPanel(
-    singleton(tags$head(includeScript("audiosrc.js")))
+    singleton(tags$head(includeScript("audiosrc.js"))),
+    singleton(tags$head(tags$script(src = "slider.js")))
   ),
   
   sidebarPanel(
@@ -17,24 +34,26 @@ shinyUI(pageWithSidebar(
       span(id = "iters", class = "shiny-text-output"), "for you:"),
   
     p("What is the genre of", em(span(id = "song", class = "shiny-text-output")), "?"),
-  
-    tags$audio(id = "audiosrc", controls = "controls", autoplay = "autoplay", class = "shiny-audio-output")
+
+    tags$audio(id = "audiosrc", controls = "controls", autoplay = "autoplay", 
+               class = "shiny-audio-output")
   ),
-  
   mainPanel(
     div(style="width: 400px;",
       p(
-        sliderInput("g1value", "Genre1", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
-        sliderInput("g2value", "Genre2", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
-        sliderInput("g3value", "Genre3", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
-        sliderInput("g4value", "Genre4", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
-        sliderInput("g5value", "Genre5", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
-        sliderInput("g6value", "Genre6", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
-        sliderInput("g7value", "Genre7", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
-        sliderInput("g8value", "Genre8", min = 0, max = 100, value = 20), #, step = 10, ticks = TRUE),
-        
+        div(
+        ownSlider("g1value", "Alternative", 100/K),
+        ownSlider("g2value", "Blues", 100/K),
+        ownSlider("g3value", "Electronic", 100/K),
+        ownSlider("g4value", "Folk & Country", 100/K),
+        ownSlider("g5value", "Funk, soul, R'n'B", 100/K),
+        ownSlider("g6value", "Jazz", 100/K),
+        ownSlider("g7value", "Pop", 100/K),
+        ownSlider("g8value", "Rap, hip-hop", 100/K),
+        ownSlider("g9value", "Rock", 100/K), id="div-sliders"),
         submitButton("Submit")
-      )
+      ),
+        tags$script(src="connect_sliders.js")
     )
   )
 ))
