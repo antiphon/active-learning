@@ -7,11 +7,15 @@ library("shiny")
 ROOT_DIR <- getOption("DORTMUND_EXPERIMENT_DIR")
 
 SOUND_POOL_FILE <- file.path(ROOT_DIR, "musicpool", "description.Rds")
+SOUND_POOL_SCALED_FILE <- file.path(ROOT_DIR, "musicpool", "description_scaled.Rds")
 SHINY_MUSIC_DIR <- file.path(ROOT_DIR, "musicpool", "mp3s")
 EXPERIMENT_DIR <- file.path(ROOT_DIR, "sessions")
+INITIAL_DATA_FILE <- file.path(ROOT_DIR, "initial_data_for_classifier.Rds")
 
-sound_pool <- readRDS(SOUND_POOL_FILE)
+sound_pool <- readRDS(SOUND_POOL_SCALED_FILE)
 genres <- levels(sound_pool$genre)
+initial_data <- readRDS(INITIAL_DATA_FILE)
+
 
 K <- length(genres)
 
@@ -25,7 +29,7 @@ init_experiment <- function(id) {
 }
 
 setup_experiment <- function(id) {
-  classifier <- classifier_initial(sound_pool)
+  classifier <- classifier_initial(initial_data$X, initial_data$y, initial_data$idx)
   # load user here if exists
   labeller <- labeller_initial(parameters_default())
   print(labeller$parameters$minimum_data)

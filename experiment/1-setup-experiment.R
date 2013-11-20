@@ -53,3 +53,23 @@ dat$file <- w
 saveRDS(dat, file = "musicpool/description.Rds")
 
 
+### Scale the features
+dat_scaled <- dat
+dat_scaled[,-c(1, 44, 45)] <- scale(dat[,-c(1, 44, 45)])
+
+saveRDS(dat_scaled, file = "musicpool/description_scaled.Rds")
+
+### Choose an initial set of items for the classifier's 'seed'
+data0 <- dat_scaled[,-c(1,45)]
+y0 <- data0[,43]
+X0 <- data0[,-43]
+
+# take a balanced sample
+set.seed(1234)
+idx <- c(sapply(split(1:nrow(X0), y0), sample, 3))
+y<-y0[idx]
+X<-X0[idx,]
+saveRDS(list(y=y, X=X, idx=idx), file = "initial_data_for_classifier.Rds")
+
+
+
