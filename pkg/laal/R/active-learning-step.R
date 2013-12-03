@@ -1,5 +1,4 @@
-#' 
-
+#' @export
 active_learning_step <- function(num_question, question, answer, models, sound_pool) {
   X <- as.matrix(sound_pool[, -c(1, 44, 45)])
 #   X <- scale(X)

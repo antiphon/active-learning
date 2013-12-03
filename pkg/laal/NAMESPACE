@@ -1,1 +1,2 @@
-exportPattern("^[[:alpha:]]+")
+export(active_learning_step)
+export(run_dortmund)

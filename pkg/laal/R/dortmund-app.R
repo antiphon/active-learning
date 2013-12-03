@@ -1,4 +1,3 @@
-
 #' @export
 run_dortmund <- function(experiment_dir) {
   options(DORTMUND_EXPERIMENT_DIR = experiment_dir)
