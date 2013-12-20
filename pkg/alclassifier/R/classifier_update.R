@@ -1,6 +1,6 @@
 #'
 
-classifier_update <- function(classifier, xnew, hnew) {
+classifier_update <- function(classifier, xnew, hnew, digits=4) {
   
   data1x<-rbind(xnew)
   data1h<-rbind(hnew)
@@ -13,7 +13,7 @@ classifier_update <- function(classifier, xnew, hnew) {
   S <- classifier$theta_S
   # update per class
   for(i in 1:ncol(m)){
-    hi <- h[,i]  
+    hi <- round( h[,i]  , digits)
     ni <- sum(hi)
     if(ni){
       wm <- cov.wt(x, hi)

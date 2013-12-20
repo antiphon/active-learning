@@ -18,7 +18,7 @@
 \newcommand{\X}{\mathcal{X}}
 \newcommand{\D}{\mathcal{D}}
 \newcommand{\x}{\mathbf{x}}
-\newcommand{\y}{\mathbf{y}}
+\newcommand{\y}{\mathbf{h}}
 
 
 \usepackage{lineno}
@@ -35,7 +35,7 @@
 
 \begin{document}
 % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
-\title{Inference for symmetric Dirichlet regression with GP prior}
+\title{Inference for symmetric Dirichlet regression with smooth random effects}
 \author{Tuomas Rajala}
 \maketitle
 
@@ -48,7 +48,7 @@ h_i | \eta_i & \sim & \mathrm{Symmetric\ Dirichlet}(\exp(\eta_i))\\
 \beta_0|\sigma_b^2 &\sim & N(0, \sigma^2_b)\\
 (u_1,...,u_n)|\sigma_u^2, \delta  &\sim & MVN(0, \sigma_u^2 R_{\delta}(\bold s, \bold s))
 \end{eqnarray}
-where $R_\delta$ is a correlation matrix.
+where $R_\delta$ is a correlation matrix. Covariates are easy to include.
 
 We use the Mat\'{e}rn family correlation
 \[
@@ -62,25 +62,26 @@ Combine all Gaussian variables into $\bold x=\{\eta_1,...,\eta_n, \beta_0, u_1, 
 p(\theta, \x | \y ) &\propto& p(\theta)p(\x|\theta) \prod p(h_i|x_i, \theta)\\
 &\propto&p(\theta)|Q(\theta)|^{1/2} \exp\left[-\frac{1}{2}\x^T Q(\theta)\x + \sum \log p(h_i|x_i,\theta)\right]
 \end{eqnarray}
-where $x_i$ are to the linear predictors $\eta_i$, and $Q(\theta)$ is the precision matrix of $\x$. 
+where $x_i$ in the likelihood are the linear predictors $\eta_i$, and $Q(\theta)$ is the precision matrix of $\x$. 
 
-Now we use the INLA approach to estimate the posterior using numerical integration. The posterior of $\theta$ is approximately
-
+Now we use the INLA approach to estimate the posterior using numerical integration. 
+\subsection{Estimation of hyper parameters}
+The posterior of $\theta$ is approximately
 \begin{eqnarray}
 \tilde p(\theta|\y) &\propto & \frac{p(\x, \theta, \y)}{\tilde p_G(\x|\theta, \y)} \Big|_{\x=\x^*(\theta)}
 \end{eqnarray}
  
-where the evaluation is at the mode of the denominator for given $\theta$, the denominator  approximated by a Gaussian distribution as follows.
+where the evaluation is at the mode of the denominator for given $\theta$, the denominator approximated by a Gaussian distribution as follows.
 
-It is clear that 
+As
 \begin{eqnarray}
 p(\x | \theta, \y)&\propto& \exp \left[-\frac{1}{2}\x^T Q(\theta)\x + \sum g_i(x_i) \right]
 \end{eqnarray}
-where $g_i(x_i)=\log p(h_i|x_i,\theta)$. The mode of the distribution is obtained by a Newton-Raphson method, where the update is computed using a Gaussian approximation, obtained by second order Taylor approximation around the initial guess $\bold\mu^0$ by
+where $g_i(x_i)=\log p(h_i|x_i,\theta)$, the distribution can approximated by a Gaussian distribution, obtained by second order Taylor approximation around some $\bold\mu^0$ by
 \[
 g_i(x_i)\approx g_i(\mu_i^0) + b_i x_i - \frac{1}{2}c_i x_i^2,
 \]
-with $b_i = g'(\mu_i^0)- \mu_i^0 g''(\mu_i^0)$ and $c_i=-g''(\mu_i^0)$. A Gaussian approximation is obtained with precision matrix $Q(\theta)+\mathrm{diag}(\bold c)$ and mode given by the solution of $[Q(\theta) + \mathrm{diag}(\bold c)]\bold\mu^1=\bold b$. 
+with $b_i = g'(\mu_i^0)- \mu_i^0 g''(\mu_i^0)$ and $c_i=-g''(\mu_i^0)$. Via a Newton-Raphson iteration a Gaussian approximation is obtained with precision matrix $Q(\theta)+\mathrm{diag}(\bold c)$ and mode given by the solution of $[Q(\theta) + \mathrm{diag}(\bold c)]\bold\mu^1=\bold b$. 
 The convergence point $(\mu^*, Q^*)$ gives the Gaussian approximation
 \begin{equation}
 p(\x|\theta, \y)\approx \tilde p(\x|\theta, \y) \propto \exp \left[-\frac{1}{2}(\x-\mu^*)^T Q^*(\x-\mu^*)\right].
@@ -105,12 +106,16 @@ Assume the general case $\eta=Z\beta + u + \epsilon$ with some $n\times p$ covar
 \Sigma_{uu} &=& \sigma_u^2 R(\x,\x).
 \end{eqnarray}
 
+
+\subsection{Estimating the Gaussian variables}
+
 The $p(\eta_i|\y)$ is marginalization over hyperparameters
 \begin{eqnarray}
 \tilde p(x_i|\y) = \sum_k p(x_i|\bold\theta_k, \y) p(\bold\theta_k | \y) \Delta_k
 \end{eqnarray}
 where $\Delta_k$ are the volume weights.
 
+For simplicity we will use the Gaussian approximation, which we acknowledge to be poor, but it is computed easily.
 
 
 \section*{Computing the informativeness for unqueried points}
@@ -132,7 +137,7 @@ for some integration scheme with constant step size $\delta_k$.
 
 For $\sigma_i^2>1$ the approximations differ, with 1. and 3. being closest together (3. is unbiased for $\delta_k \rightarrow 0$). Fortunately $\sigma_i^2$ is in practice small so we can use \#1 i.e. the plugin estimate.
 
-To derive the mean and variance for a new locations $\bold s^*$ we use the \textit{simple Kriging} equations:
+To derive the mean and variance for $\eta^*$ at new locations $\bold s^*$ we use the \textit{simple Kriging} equations:
 \begin{eqnarray}
 E\eta^*  &=&  C(\bold s^*, \bold s)(C(\bold s, \bold s)+\sigma_e^2 I)^{-1} \hat \eta + \hat \beta_0\\
 \Sigma_{\eta^*} &=& C(\bold s^*, \bold s^*) - C(\bold s^*, \bold s)[C(\bold s, \bold s) + \sigma_e^2]^{-1} C(\bold s,\bold s^*)\\

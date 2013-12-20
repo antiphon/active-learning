@@ -1,6 +1,5 @@
 #'
 labeller_update <- function(labeller, X, h) {
-  
   X<-rbind(X)
   h<-rbind(h)
   h <- h +  0.005

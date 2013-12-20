@@ -10,6 +10,8 @@ labeller_estimate_alpha <- function(X, h, parameters) {
   # for the intercept
   Z <- cbind(rep(1, n))
   p <- 1#ncol(Z)
+  beta_mu0 <- parameters$hyper_prior$mu0
+  
   nx <- n+n+p
   # some common items
   D <- as.matrix(dist(X))
@@ -31,10 +33,16 @@ labeller_estimate_alpha <- function(X, h, parameters) {
   # cross between eta and beta
   S[q_eta, q_beta]  <- Z%*%Sbeta0 
   S[q_beta, q_eta] <- t(S[q_eta, q_beta])
-  
+  #
+  #
+  covf <- parameters$covf
+  #
+  # prior mean of x
+  x_prior_mu <- c(rep(beta_mu0, n), rep(beta_mu0, p), rep(0, n) )
+  #
   # This function gives the Q for given hyper priors theta
   Qtheta <- function(theta){
-    Su0 <- matern(D, range=theta$range)
+    Su0 <- covf(D, theta)
     diag(Su0) <- 1
     # spatial components spat
     S[q_spat, q_spat] <- theta$s2*Su0
@@ -69,8 +77,8 @@ labeller_estimate_alpha <- function(X, h, parameters) {
     while(loop) {
       mu0 <- mu
       mu <- pmin(pmax(P$gaussian_min, mu), P$gaussian_max)
-      
-      bee <- c(gg(mu[q_eta]) - mu[q_eta]*ggg(mu[q_eta]) , fill)
+      prior_mu <- Q1%*%x_prior_mu
+      bee <- c(gg(mu[q_eta]) - mu[q_eta]*ggg(mu[q_eta]) , fill) + prior_mu
       cee <- c(-ggg(mu[q_eta]) , fill)
       QN <- Q1+diag(cee)
       resp <- try(mu <- solve(QN, bee), silent=TRUE)
@@ -97,8 +105,8 @@ labeller_estimate_alpha <- function(X, h, parameters) {
     #
     log_f_data <- function(x) sum( (exp(x)-1)*lysum + lgamma(K*exp(x)) - K*lgamma(exp(x)) )
     # priors
-    prior_a <- c(P$hyper_prior$tau_a, P$hyper_prior$tau_a, P$hyper_prior$range_a)
-    prior_b <- c(P$hyper_prior$tau_b, P$hyper_prior$tau_b, P$hyper_prior$range_b)
+    prior_a <- c(P$hyper_prior$tau_nugget_a, P$hyper_prior$tau_u_a, P$hyper_prior$range_a)
+    prior_b <- c(P$hyper_prior$tau_nugget_b, P$hyper_prior$tau_u_b, P$hyper_prior$range_b)
     log_f_priors <- function(theta) { 
       sum(  (prior_a-1)*log(theta) - prior_b*theta + prior_a*log(prior_b) - lgamma(prior_a)  )
     }
@@ -128,7 +136,7 @@ labeller_estimate_alpha <- function(X, h, parameters) {
     theta_star <- optim(fn=neg_log_f_theta, par=P$start, 
                         lower=P$lower, upper=P$upper,
                         method="L-BFGS-B", hessian=T)
-    cat2(", mode found.[", paste(c("s2=","nugget=","range="), 
+    cat2(", mode found.[", paste(c("nugget=","s2=","range="), 
                                  theta_star$par^c(-1,-1,1)),"]\n")
     #
     # done for now. If curvature (variances) are needed, add them here.
@@ -158,12 +166,6 @@ labeller_estimate_alpha <- function(X, h, parameters) {
        data_h=h,
        K=K,
        estimated=TRUE)
-}
-
-
-matern <- function(x, kappa = 1, range = 1) {
-  range <- sqrt(8 * kappa) / range
-  besselK(x*range, kappa)*(x*range)^kappa/(2^(kappa-1)*gamma(kappa))
 }
 
 
